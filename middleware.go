@@ -14,7 +14,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var defaultMetricPath = "/metrics"
+var (
+	defaultMetricPath = "/metrics"
+	defaultObjectives = map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001}
+)
 
 // Standard default metrics
 //	counter, counter_vec, gauge, gauge_vec,
@@ -30,19 +33,22 @@ var reqDur = &Metric{
 	ID:          "reqDur",
 	Name:        "request_duration_seconds",
 	Description: "The HTTP request latencies in seconds.",
-	Type:        "summary"}
+	Type:        "summary",
+	Objectives:  defaultObjectives}
 
 var resSz = &Metric{
 	ID:          "resSz",
 	Name:        "response_size_bytes",
 	Description: "The HTTP response sizes in bytes.",
-	Type:        "summary"}
+	Type:        "summary",
+	Objectives:  defaultObjectives}
 
 var reqSz = &Metric{
 	ID:          "reqSz",
 	Name:        "request_size_bytes",
 	Description: "The HTTP request sizes in bytes.",
-	Type:        "summary"}
+	Type:        "summary",
+	Objectives:  defaultObjectives}
 
 var standardMetrics = []*Metric{
 	reqCnt,
@@ -81,6 +87,7 @@ type Metric struct {
 	Description     string
 	Type            string
 	Args            []string
+	Objectives      map[float64]float64
 }
 
 // Prometheus contains the metrics gathered by the instance and its path
@@ -299,18 +306,20 @@ func NewMetric(m *Metric, subsystem string) prometheus.Collector {
 	case "summary_vec":
 		metric = prometheus.NewSummaryVec(
 			prometheus.SummaryOpts{
-				Subsystem: subsystem,
-				Name:      m.Name,
-				Help:      m.Description,
+				Subsystem:  subsystem,
+				Name:       m.Name,
+				Help:       m.Description,
+				Objectives: m.Objectives,
 			},
 			m.Args,
 		)
 	case "summary":
 		metric = prometheus.NewSummary(
 			prometheus.SummaryOpts{
-				Subsystem: subsystem,
-				Name:      m.Name,
-				Help:      m.Description,
+				Subsystem:  subsystem,
+				Name:       m.Name,
+				Help:       m.Description,
+				Objectives: m.Objectives,
 			},
 		)
 	}
